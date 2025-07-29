@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatório de Vendas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      margin: 20px auto;
+      display: block;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    h2 {
+      margin-top: 40px;
+      color: #333;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #eee;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Relatório de Vendas por Data</h1>
+  <button onclick="gerarRelatorio()">Gerar Relatório</button>
+
+  <div id="relatorio"></div>
+
+  <script>
+    function gerarRelatorio() {
+      const vendedores = JSON.parse(localStorage.getItem('vendedores')) || [];
+      const vendasPorData = {};
+
+      // Organiza vendas por data
+      vendedores.forEach(v => {
+        v.historico.forEach(h => {
+          const data = h.data;
+          const vendido = h.recebeu - h.devolveu;
+          const apurado = vendido * v.cotacao;
+
+          if (!vendasPorData[data]) {
+            vendasPorData[data] = [];
+          }
+
+          vendasPorData[data].push({
+            vendedor: v.nome,
+            vendido,
+            apurado
+          });
+        });
+      });
+
+      // Monta o HTML
+      const container = document.getElementById('relatorio');
+      container.innerHTML = '';
+
+      const datas = Object.keys(vendasPorData).sort();
+
+      datas.forEach(data => {
+        const section = document.createElement('div');
+        section.innerHTML = `<h2>${data}</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Vendedor</th>
+                <th>Total Vendido</th>
+                <th>Total Apurado (R$)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${vendasPorData[data].map(v => `
+                <tr>
+                  <td>${v.vendedor}</td>
+                  <td>${v.vendido}</td>
+                  <td>${v.apurado.toFixed(2)}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        `;
+        container.appendChild(section);
+      });
+    }
+if (localStorage.getItem('logado') !== 'true') {
+  window.location.href = 'index.html';
+}
+
+  </script>
+
+</body>
+</html>

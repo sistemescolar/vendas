@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Backup e Restauração</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f4f4f4;
+    }
+    h2 {
+      text-align: center;
+    }
+    button, input[type="file"] {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    input[type="file"] {
+      padding: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Backup e Restauração do Sistema</h2>
+
+  <button onclick="fazerBackup()">📥 Fazer Backup</button>
+
+  <input type="file" accept=".json" onchange="restaurarBackup(event)" />
+  <p style="text-align: center; font-size: 14px;">Selecione um arquivo .json para restaurar os dados</p>
+
+  <script>
+if (localStorage.getItem('logado') !== 'true') {
+  window.location.href = 'index.html';
+}
+
+    function fazerBackup() {
+      const dados = {
+        vendedores: JSON.parse(localStorage.getItem('vendedores') || '[]'),
+        despesas: JSON.parse(localStorage.getItem('despesas') || '[]'),
+      };
+
+      const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'backup_sistema.json';
+      a.click();
+
+      URL.revokeObjectURL(url);
+    }
+
+    function restaurarBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const dados = JSON.parse(e.target.result);
+          if (dados.vendedores && Array.isArray(dados.vendedores)) {
+            localStorage.setItem('vendedores', JSON.stringify(dados.vendedores));
+          }
+          if (dados.despesas && Array.isArray(dados.despesas)) {
+            localStorage.setItem('despesas', JSON.stringify(dados.despesas));
+          }
+          alert('Backup restaurado com sucesso!');
+        } catch (error) {
+          alert('Erro ao restaurar: o arquivo pode estar corrompido ou em formato inválido.');
+        }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+
+</body>
+</html>

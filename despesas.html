@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Despesas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f9f9f9;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+
+    input, select, button {
+      padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      width: 100%;
+      max-width: 400px;
+      box-sizing: border-box;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #eee;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Cadastro de Despesas</h2>
+
+  <label for="data">Data:</label>
+  <input type="date" id="data">
+
+  <label for="descricao">Descrição:</label>
+  <input type="text" id="descricao">
+
+  <label for="total">Total (R$):</label>
+  <input type="number" id="total" step="0.01">
+
+  <label for="situacao">Situação:</label>
+  <select id="situacao">
+    <option value="pago">Pago</option>
+    <option value="devendo">Devendo</option>
+  </select>
+
+  <button onclick="salvarDespesa()">Salvar Despesa</button>
+
+  <h3>Filtrar por Data</h3>
+  <input type="date" id="filtroData">
+  <button onclick="filtrarDespesas()">Filtrar</button>
+  <button onclick="listarDespesas()">Mostrar Todas</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Descrição</th>
+        <th>Total (R$)</th>
+        <th>Situação</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="tabelaDespesas"></tbody>
+  </table>
+
+  <script>
+if (localStorage.getItem('logado') !== 'true') {
+  window.location.href = 'index.html';
+}
+
+    let despesas = JSON.parse(localStorage.getItem('despesas')) || [];
+
+    function salvarDespesa() {
+      const data = document.getElementById('data').value;
+      const descricao = document.getElementById('descricao').value;
+      const total = parseFloat(document.getElementById('total').value);
+      const situacao = document.getElementById('situacao').value;
+
+      if (!data || !descricao || isNaN(total)) {
+        alert('Preencha todos os campos corretamente.');
+        return;
+      }
+
+      despesas.push({ data, descricao, total, situacao });
+      localStorage.setItem('despesas', JSON.stringify(despesas));
+      limparCampos();
+      listarDespesas();
+    }
+
+    function limparCampos() {
+      document.getElementById('data').value = '';
+      document.getElementById('descricao').value = '';
+      document.getElementById('total').value = '';
+      document.getElementById('situacao').value = 'pago';
+    }
+
+    function listarDespesas(lista = despesas) {
+      const tabela = document.getElementById('tabelaDespesas');
+      tabela.innerHTML = '';
+
+      if (lista.length === 0) {
+        tabela.innerHTML = '<tr><td colspan="5">Nenhuma despesa encontrada.</td></tr>';
+        return;
+      }
+
+      lista.forEach((d, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${d.data}</td>
+          <td>${d.descricao}</td>
+          <td>R$ ${d.total.toFixed(2)}</td>
+          <td>${d.situacao}</td>
+          <td><button onclick="excluirDespesa(${index})">Excluir</button></td>
+        `;
+        tabela.appendChild(tr);
+      });
+    }
+
+    function excluirDespesa(index) {
+      if (confirm('Deseja excluir esta despesa?')) {
+        despesas.splice(index, 1);
+        localStorage.setItem('despesas', JSON.stringify(despesas));
+        listarDespesas();
+      }
+    }
+
+    function filtrarDespesas() {
+      const dataFiltro = document.getElementById('filtroData').value;
+      if (!dataFiltro) {
+        alert('Escolha uma data para filtrar.');
+        return;
+      }
+
+      const filtradas = despesas.filter(d => d.data === dataFiltro);
+      listarDespesas(filtradas);
+    }
+
+    // Carregar despesas ao iniciar
+    listarDespesas();
+  </script>
+</body>
+</html>

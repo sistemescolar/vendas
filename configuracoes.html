@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gerenciar Dados</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f4f4f4;
+    }
+
+    h2 {
+      margin-top: 30px;
+      color: #222;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    button {
+      padding: 5px 10px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+
+    .excluir { background-color: #e74c3c; color: white; border: none; }
+    .zerar { background-color: #555; color: white; padding: 10px 20px; margin-top: 30px; border: none; }
+
+    .saldo-anterior-container {
+      margin-top: 40px;
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #ccc;
+      max-width: 400px;
+    }
+
+    .saldo-anterior-container label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .saldo-anterior-container input {
+      width: 100%;
+      padding: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    .saldo-anterior-container button {
+      margin-top: 10px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .saldo-atual {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Configurações</h1>
+
+  <h2>Vendedores Cadastrados</h2>
+  <ul id="listaVendedores"></ul>
+
+  <h2>Despesas Cadastradas</h2>
+  <ul id="listaDespesas"></ul>
+
+  <button class="zerar" onclick="zerarTudo()">🔄 Zerar Histórico (Vendas + Despesas + Saldo)</button>
+
+  <div class="saldo-anterior-container">
+    <label for="saldoAnteriorInput">Adicionar / Atualizar Saldo Anterior no Caixa</label>
+    <input type="number" id="saldoAnteriorInput" step="0.01" min="0" placeholder="Digite o saldo anterior (R$)" />
+    <button onclick="salvarSaldoAnterior()">Salvar Saldo Anterior</button>
+    <div class="saldo-atual" id="saldoAtualDisplay"></div>
+  </div>
+
+  <script>
+    // Carrega e exibe vendedores
+    function carregarVendedores() {
+      const lista = document.getElementById('listaVendedores');
+      const vendedores = JSON.parse(localStorage.getItem('vendedores')) || [];
+
+      lista.innerHTML = '';
+      vendedores.forEach((v, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          ${v.nome} (${v.localidade}) - Cotação: R$ ${v.cotacao}
+          <button class="excluir" onclick="excluirVendedor(${i})">Excluir</button>
+        `;
+        lista.appendChild(li);
+      });
+    }
+
+    function excluirVendedor(index) {
+      if (confirm("Tem certeza que deseja excluir este vendedor?")) {
+        const vendedores = JSON.parse(localStorage.getItem('vendedores')) || [];
+        vendedores.splice(index, 1);
+        localStorage.setItem('vendedores', JSON.stringify(vendedores));
+        carregarVendedores();
+      }
+    }
+
+    // Carrega e exibe despesas
+    function carregarDespesas() {
+      const lista = document.getElementById('listaDespesas');
+      const despesas = JSON.parse(localStorage.getItem('despesas')) || [];
+
+      lista.innerHTML = '';
+      despesas.forEach((d, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          ${d.data} - ${d.descricao} | R$ ${parseFloat(d.total).toFixed(2)} (${d.situacao})
+          <button class="excluir" onclick="excluirDespesa(${i})">Excluir</button>
+        `;
+        lista.appendChild(li);
+      });
+    }
+
+    function excluirDespesa(index) {
+      if (confirm("Excluir esta despesa?")) {
+        const despesas = JSON.parse(localStorage.getItem('despesas')) || [];
+        despesas.splice(index, 1);
+        localStorage.setItem('despesas', JSON.stringify(despesas));
+        carregarDespesas();
+      }
+    }
+
+    // Zerar sistema (mantém os vendedores, zera vendas e despesas)
+    function zerarTudo() {
+      if (confirm("⚠️ Isso apagará todo o histórico de vendas, despesas e saldo anterior. Os vendedores serão mantidos. Deseja continuar?")) {
+        const vendedores = JSON.parse(localStorage.getItem('vendedores')) || [];
+
+        // Zera apenas o histórico de cada vendedor
+        const vendedoresZerados = vendedores.map(v => {
+          return {
+            ...v,
+            historico: []
+          };
+        });
+
+        localStorage.setItem('vendedores', JSON.stringify(vendedoresZerados));
+        localStorage.removeItem('despesas');
+        localStorage.removeItem('saldoAnterior');
+
+        carregarVendedores();
+        carregarDespesas();
+        atualizarSaldoAtualDisplay();
+
+        alert("Caixa, histórico de vendas e despesas foram zerados. Vendedores mantidos.");
+      }
+    }
+
+    // SALDO ANTERIOR
+
+    function salvarSaldoAnterior() {
+      const input = document.getElementById('saldoAnteriorInput');
+      let valor = parseFloat(input.value);
+      if (isNaN(valor) || valor < 0) {
+        alert('Digite um valor válido para o saldo anterior.');
+        return;
+      }
+      localStorage.setItem('saldoAnterior', valor.toFixed(2));
+      atualizarSaldoAtualDisplay();
+      alert('Saldo anterior salvo com sucesso!');
+      input.value = '';
+    }
+
+    function atualizarSaldoAtualDisplay() {
+      const saldo = localStorage.getItem('saldoAnterior');
+      const display = document.getElementById('saldoAtualDisplay');
+      if (saldo !== null) {
+        display.textContent = `Saldo Anterior Atual: R$ ${parseFloat(saldo).toFixed(2)}`;
+      } else {
+        display.textContent = 'Nenhum saldo anterior cadastrado.';
+      }
+    }
+
+    // Inicializa tudo
+    carregarVendedores();
+    carregarDespesas();
+    atualizarSaldoAtualDisplay();
+
+    // Protege por login
+    if (localStorage.getItem('logado') !== 'true') {
+      window.location.href = 'index.html';
+    }
+  </script>
+
+</body>
+</html>
